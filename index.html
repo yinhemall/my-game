@@ -3,41 +3,55 @@
 <body style="background: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
     <canvas id="gameCanvas" width="400" height="200" style="border: 2px solid white; background: #000;"></canvas>
     <script>
-        const CANVAS = document.getElementById("gameCanvas");
-        const CTX = CANVAS.getContext("2d");
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-        // 這裡對應你上傳的大寫 .PNG 檔名
-        const P1_IMG = new Image(); P1_IMG.src = 'PLAYER.PNG';
-        const P2_IMG = new Image(); P2_IMG.src = 'ENEMY.PNG';
+        // 檔名完全對應：player.PNG 和 enemy.PNG
+        const p1Img = new Image(); p1Img.src = 'player.PNG';
+        const p2Img = new Image(); p2Img.src = 'enemy.PNG';
 
-        let p1 = { x: 50, y: 100, w: 60, h: 80, hp: 100 };
-        let p2 = { x: 280, y: 100, w: 60, h: 80, hp: 100 };
+        let p1 = { x: 50, y: 100, w: 60, h: 80, hp: 100, isAttacking: false };
+        let p2 = { x: 280, y: 100, w: 60, h: 80, hp: 100, isAttacking: false };
 
         function draw() {
-            CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // 畫 P1 (正常)
-            if (P1_IMG.complete) CTX.drawImage(P1_IMG, p1.x, p1.y, p1.w, p1.h);
+            // 繪製 P1
+            if (p1Img.complete) ctx.drawImage(p1Img, p1.x, p1.y, p1.w, p1.h);
+            if (p1.isAttacking) {
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(p1.x + 50, p1.y + 20, 40, 10);
+            }
             
-            // 畫 P2 (水平翻轉，讓它面對 P1)
-            if (P2_IMG.complete) {
-                CTX.save();
-                CTX.scale(-1, 1);
-                CTX.drawImage(P2_IMG, -p2.x - p2.w, p2.y, p2.w, p2.h);
-                CTX.restore();
+            // 繪製 P2
+            if (p2Img.complete) {
+                ctx.save();
+                ctx.scale(-1, 1);
+                ctx.drawImage(p2Img, -p2.x - p2.w, p2.y, p2.w, p2.h);
+                ctx.restore();
+            }
+            if (p2.isAttacking) {
+                ctx.fillStyle = "red";
+                ctx.fillRect(p2.x - 40, p2.y + 20, 40, 10);
             }
 
-            // 血條顯示
-            CTX.fillStyle = "white";
-            CTX.fillText("P1 HP: " + p1.hp, 10, 20);
-            CTX.fillText("P2 HP: " + p2.hp, 340, 20);
+            ctx.fillStyle = "white";
+            ctx.fillText("P1 HP: " + p1.hp, 10, 20);
+            ctx.fillText("P2 HP: " + p2.hp, 340, 20);
+            
             requestAnimationFrame(draw);
         }
 
-        // 點擊事件
         window.addEventListener('touchstart', (e) => {
-            if (e.touches[0].clientX < 200) p2.hp -= 5;
-            else p1.hp -= 5;
+            if (e.touches[0].clientX < 200) {
+                p1.isAttacking = true;
+                p2.hp -= 5;
+                setTimeout(() => { p1.isAttacking = false; }, 200);
+            } else {
+                p2.isAttacking = true;
+                p1.hp -= 5;
+                setTimeout(() => { p2.isAttacking = false; }, 200);
+            }
         });
 
         draw();
