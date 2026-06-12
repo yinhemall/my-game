@@ -5,19 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #game-container { position: relative; }
-        canvas { border: 2px solid #fff; }
-        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; color: #fff; font-size: 20px; padding: 0 20px; box-sizing: border-box; }
-        #overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; color:yellow; font-size:50px; }
+        #game-container { position: relative; width: 800px; height: 400px; border: 2px solid #fff; }
+        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; color: #fff; font-size: 20px; box-sizing: border-box; }
+        .hp-bar { width: 300px; height: 20px; background: #444; border: 1px solid #fff; }
+        #hp1-fill { height: 100%; width: 100%; background: cyan; transition: width 0.3s; }
+        #hp2-fill { height: 100%; width: 100%; background: yellow; transition: width 0.3s; }
+        #overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; color:white; font-size:50px; z-index:100; cursor: pointer; }
     </style>
 </head>
 <body>
 <div id="game-container">
     <div class="hud">
-        <div>P1 HP: <span id="hp1">100</span></div>
-        <div>P2 HP: <span id="hp2">100</span></div>
+        <div>P1 HP <div class="hp-bar"><div id="hp1-fill"></div></div></div>
+        <div>P2 HP <div class="hp-bar"><div id="hp2-fill"></div></div></div>
     </div>
-    <div id="overlay" onclick="resetGame()">WIN!</div>
+    <div id="overlay" onclick="location.reload()">REMATCH</div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
 </div>
 
@@ -27,57 +29,56 @@
     const p1Img = new Image(); p1Img.src = 'player.PNG';
     const p2Img = new Image(); p2Img.src = 'enemy.PNG';
 
-    let p1 = { x: 100, y: 150, hp: 100, frame: 0, attacking: false };
-    let p2 = { x: 500, y: 150, hp: 100, frame: 0, attacking: false };
+    let p1 = { x: 50, y: 120, hp: 100, frame: 0, attacking: false };
+    let p2 = { x: 550, y: 120, hp: 100, frame: 0, attacking: false };
     let gameOver = false;
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // P1: 動作區在圖片上半部 (0-200), 特效區在圖片下半部 (200-400)
-        let p1Sx = p1.attacking ? p1.frame * 200 : 0;
-        ctx.drawImage(p1Img, p1Sx, 0, 200, 200, p1.x, p1.y, 200, 200);
-        if(p1.attacking) ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x+50, p1.y, 300, 200);
+        // P1：紅面具 (Player.PNG)
+        // 動作抓上方(0-200), 特效抓下方(200-400)
+        let sx = p1.attacking ? p1.frame * 200 : 0;
+        ctx.drawImage(p1Img, sx, 0, 200, 200, p1.x, p1.y, 200, 200);
+        if(p1.attacking) {
+            ctx.globalCompositeOperation = 'screen';
+            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 80, p1.y, 400, 200);
+            ctx.globalCompositeOperation = 'source-over';
+        }
 
-        // P2: 同樣邏輯
+        // P2：流浪者 (Enemy.PNG)
         ctx.save(); ctx.scale(-1, 1);
-        let p2Sx = p2.attacking ? p2.frame * 200 : 0;
-        ctx.drawImage(p2Img, p2Sx, 0, 200, 200, -p2.x-250, p2.y, 200, 200);
-        if(p2.attacking) ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x-450, p2.y, 300, 200);
+        let sx2 = p2.attacking ? p2.frame * 200 : 0;
+        ctx.drawImage(p2Img, sx2, 0, 200, 200, -p2.x - 250, p2.y, 200, 200);
+        if(p2.attacking) {
+            ctx.globalCompositeOperation = 'screen';
+            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 500, p2.y, 400, 200);
+            ctx.globalCompositeOperation = 'source-over';
+        }
         ctx.restore();
 
         if(!gameOver) requestAnimationFrame(draw);
     }
 
-    function attack(attacker, target, hpId) {
+    function attack(attacker, target, id) {
         if(attacker.attacking) return;
         attacker.attacking = true;
         target.hp -= 20;
-        document.getElementById(hpId).innerText = target.hp;
+        document.getElementById(id).style.width = target.hp + "%";
         if(target.hp <= 0) { gameOver = true; document.getElementById("overlay").style.display = "flex"; }
         
-        let count = 0;
-        let int = setInterval(() => {
-            attacker.frame = count++;
-            if(count > 3) { clearInterval(int); attacker.attacking = false; }
+        let f = 0;
+        let i = setInterval(() => {
+            attacker.frame = f++;
+            if(f > 3) { clearInterval(i); attacker.attacking = false; }
         }, 100);
     }
 
     window.addEventListener('touchstart', (e) => {
-        if(e.touches[0].clientX < 400) attack(p1, p2, "hp2");
-        else attack(p2, p1, "hp1");
+        if(e.touches[0].clientX < 400) attack(p1, p2, "hp2-fill");
+        else attack(p2, p1, "hp1-fill");
     });
-
-    function resetGame() {
-        p1.hp = 100; p2.hp = 100; gameOver = false;
-        document.getElementById("hp1").innerText = 100;
-        document.getElementById("hp2").innerText = 100;
-        document.getElementById("overlay").style.display = "none";
-        draw();
-    }
-    
-    let count = 0;
-    p1Img.onload = p2Img.onload = () => { if(++count === 2) draw(); };
+    p1Img.onload = p2Img.onload = draw;
 </script>
 </body>
 </html>
