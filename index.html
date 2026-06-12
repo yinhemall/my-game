@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html>
-<body style="background: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
-    <canvas id="gameCanvas" width="800" height="400" style="border: 4px solid white; background: #000;"></canvas>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+        #gameCanvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -9,9 +16,9 @@
         const p1Img = new Image(); p1Img.src = './player.PNG';
         const p2Img = new Image(); p2Img.src = './enemy.PNG';
 
-        // 放大角色尺寸 (w: 120, h: 160)
-        let p1 = { x: 100, y: 150, w: 120, h: 160, hp: 100, isAttacking: false };
-        let p2 = { x: 580, y: 150, w: 120, h: 160, hp: 100, isAttacking: false };
+        // 角色位置與大小
+        let p1 = { x: 50, y: 150, w: 200, h: 200, hp: 100, isAttacking: false };
+        let p2 = { x: 550, y: 150, w: 200, h: 200, hp: 100, isAttacking: false };
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -20,7 +27,7 @@
             if (p1Img.complete) ctx.drawImage(p1Img, p1.x, p1.y, p1.w, p1.h);
             if (p1.isAttacking) {
                 ctx.fillStyle = "yellow";
-                ctx.fillRect(p1.x + 100, p1.y + 40, 80, 20); // 特效放大
+                ctx.fillRect(p1.x + 150, p1.y + 50, 100, 30);
             }
             
             // 繪製 P2
@@ -32,20 +39,21 @@
             }
             if (p2.isAttacking) {
                 ctx.fillStyle = "red";
-                ctx.fillRect(p2.x - 80, p2.y + 40, 80, 20); // 特效放大
+                ctx.fillRect(p2.x - 100, p2.y + 50, 100, 30);
             }
 
-            // 放大字體
+            // 調整後的文字大小與位置
             ctx.fillStyle = "white";
-            ctx.font = "30px Arial";
-            ctx.fillText("P1 HP: " + p1.hp, 50, 50);
-            ctx.fillText("P2 HP: " + p2.hp, 600, 50);
+            ctx.font = "40px Arial"; // 字體放大
+            ctx.fillText("P1 HP: " + p1.hp, 50, 60);
+            ctx.fillText("P2 HP: " + p2.hp, 550, 60);
             
             requestAnimationFrame(draw);
         }
 
         window.addEventListener('touchstart', (e) => {
-            if (e.touches[0].clientX < 400) { // 調整觸控偵測範圍
+            let touchX = (e.touches[0].clientX / window.innerWidth) * canvas.width;
+            if (touchX < 400) {
                 p1.isAttacking = true;
                 p2.hp -= 5;
                 setTimeout(() => { p1.isAttacking = false; }, 200);
