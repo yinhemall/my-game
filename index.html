@@ -2,83 +2,87 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Samurai Duel</title>
     <style>
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #game-container { position: relative; width: 800px; height: 400px; border: 4px solid #fff; }
+        #game-container { position: relative; width: 100%; max-width: 800px; aspect-ratio: 2/1; border: 2px solid #fff; }
         canvas { width: 100%; height: 100%; display: block; }
         
-        /* UI HUD 層 - 使用 z-index 確保在最上層 */
-        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-size: 20px; font-weight: bold; z-index: 10; pointer-events: none; }
-        .hp-bar { width: 300px; height: 20px; background: #444; border: 2px solid #fff; }
-        #hp1-fill { height: 100%; width: 100%; background: cyan; transition: width 0.3s; }
-        #hp2-fill { height: 100%; width: 100%; background: red; transition: width 0.3s; }
-        
-        /* 獲勝重啟畫面 */
-        #overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; color:white; font-size:50px; z-index:20; cursor: pointer; }
+        /* 修正 UI */
+        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 10px; box-sizing: border-box; color: white; font-weight: bold; pointer-events: none; }
+        .hp-bar { width: 30%; height: 15px; background: #333; border: 1px solid #fff; }
+        #hp1-fill { height: 100%; width: 100%; background: cyan; }
+        #hp2-fill { height: 100%; width: 100%; background: red; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div class="hud">
-        <div>P1 HP<div class="hp-bar"><div id="hp1-fill" style="width:100%"></div></div></div>
-        <div>P2 HP<div class="hp-bar"><div id="hp2-fill" style="width:100%"></div></div></div>
+        <div>P1<div class="hp-bar"><div id="hp1-fill"></div></div></div>
+        <div>P2<div class="hp-bar"><div id="hp2-fill"></div></div></div>
     </div>
-    <div id="overlay" onclick="location.reload()">REMATCH (Tap to restart)</div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const p1Img = new Image(); p1Img.src = 'player.PNG';
+    
+    // 確保圖片路徑正確，並根據檔名決定如何解析動作格
+    const p1Img = new Image(); p1Img.src = 'player.PNG'; 
     const p2Img = new Image(); p2Img.src = 'enemy.PNG';
 
     let p1 = { x: 50, y: 150, hp: 100, frame: 0, attacking: false };
     let p2 = { x: 550, y: 150, hp: 100, frame: 0, attacking: false };
-    let gameOver = false;
+
+    // 針對 enemy.PNG 定義特定的解析和顯示比例
+    const P2_CONFIG = {
+        frame_w: 128, // 假設原本 enemy.PNG 的每一格寬度，根據您的截圖，它偏小，故這裡設定一個解析值
+        draw_w: 120, // 在 Canvas 上顯示的寬度
+        draw_h: 120, // 在 Canvas 上顯示的高度
+        x_offset: -20, // 修正顯示位置偏移
+    };
 
     function draw() {
         ctx.clearRect(0, 0, 800, 400);
 
-        // P1
-        let s1 = p1.attacking ? p1.frame * 200 : 0;
-        ctx.drawImage(p1Img, s1, 0, 200, 200, p1.x, p1.y, 200, 200);
-        if(p1.attacking) ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 20, 300, 200);
+        // 繪製 P1 (斗笠流浪者 - 動作在左排，特效在下)
+        let s1_x = p1.attacking ? 1 * 200 : 0; // 根據 player.PNG 截圖，動作格可能是縱向排或在左側，這裡先用原本邏輯，若畫面不對請提供 player.PNG 原圖
+        ctx.drawImage(p1Img, s1_x, 0, 200, 200, p1.x, p1.y, 200, 200);
+        if(p1.attacking) {
+            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y, 300, 200);
+        }
 
-        // P2
-        ctx.save(); ctx.scale(-1, 1);
-        let s2 = p2.attacking ? p2.frame * 200 : 0;
-        ctx.drawImage(p2Img, s2, 0, 200, 200, -p2.x - 250, p2.y, 200, 200);
-        if(p2.attacking) ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 550, p2.y - 20, 300, 200);
+        // 繪製 P2 (紅面具 - 動作在右排，特效偏向顆粒狀)
+        ctx.save();
+        ctx.scale(-1, 1);
+        
+        // 根據截圖， enemy.PNG 似乎是一個 1x4 的 Sprite，每一格較小
+        let s2_x = p2.attacking ? (3 - p2.frame) * P2_CONFIG.frame_w : 3 * P2_CONFIG.frame_w; // 假定攻擊動畫從最後一格開始播
+        
+        ctx.drawImage(p2Img, s2_x, 0, P2_CONFIG.frame_w, 200, -p2.x - P2_CONFIG.draw_w + P2_CONFIG.x_offset, p2.y, P2_CONFIG.draw_w, P2_CONFIG.draw_h);
+        
+        if (p2.attacking) {
+            // 針對其較小的、顆粒狀的特效，我們縮小顯示比例
+            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - P2_CONFIG.draw_w + P2_CONFIG.x_offset - 10, p2.y + 10, 200, 100);
+        }
         ctx.restore();
 
-        if(!gameOver) requestAnimationFrame(draw);
+        requestAnimationFrame(draw);
     }
 
-    function attack(attacker, target, id) {
-        if(attacker.attacking || gameOver) return;
-        attacker.attacking = true;
-        target.hp -= 20;
-        document.getElementById(id).style.width = target.hp + "%";
-        
-        if(target.hp <= 0) { 
-            gameOver = true; 
-            document.getElementById("overlay").style.display = "flex"; 
-        }
-        
-        let f = 0;
-        let i = setInterval(() => {
-            attacker.frame = f++;
-            if(f > 3) { clearInterval(i); attacker.attacking = false; }
-        }, 100);
-    }
-
+    // 觸控攻擊邏輯
     window.addEventListener('touchstart', (e) => {
         let touchX = e.touches[0].clientX / window.innerWidth * 800;
-        if(touchX < 400) attack(p1, p2, "hp2-fill");
-        else attack(p2, p1, "hp1-fill");
+        if(touchX < 400) {
+            p1.attacking = true;
+            setTimeout(() => p1.attacking = false, 300);
+        } else {
+            p2.attacking = true;
+            setTimeout(() => p2.attacking = false, 300);
+        }
     });
 
     p1Img.onload = p2Img.onload = draw;
