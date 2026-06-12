@@ -1,36 +1,43 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+canvas.width = 400; canvas.height = 200;
 
-// 確保畫布有正確尺寸
-canvas.width = 400;
-canvas.height = 200;
-
-let player = { x: 50, y: 150, size: 20, vy: 0, gravity: 0.8 };
+// 玩家與敵人設定
+let player = { x: 50, y: 150, w: 30, h: 30, color: "white", hp: 100, isAttacking: false };
+let enemy = { x: 300, y: 150, w: 30, h: 30, color: "red", hp: 100 };
 
 function draw() {
-    // 清除上一幀
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 畫出白色方塊 (主角)
+
+    // 1. 畫血條 (UI)
     ctx.fillStyle = "white";
-    ctx.fillRect(player.x, player.y, player.size, player.size);
-    
-    // 物理邏輯
-    player.vy += player.gravity;
-    player.y += player.vy;
-    
-    // 地面判定
-    if (player.y > 150) { 
-        player.y = 150; 
-        player.vy = 0; 
+    ctx.fillText("Player HP: " + player.hp, 10, 20);
+    ctx.fillText("Enemy HP: " + enemy.hp, 300, 20);
+
+    // 2. 繪製角色
+    ctx.fillStyle = player.isAttacking ? "blue" : player.color;
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+    ctx.fillStyle = enemy.color;
+    ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+
+    // 3. 碰撞攻擊判斷
+    if (player.isAttacking && Math.abs(player.x - enemy.x) < 50) {
+        enemy.hp -= 1; // 扣血
+        if (enemy.hp < 0) enemy.hp = 0;
     }
-    
+
     requestAnimationFrame(draw);
 }
 
-// 點擊觸發跳躍
-window.addEventListener('touchstart', () => { 
-    if (player.y === 150) player.vy = -12; 
+// 觸控控制：左邊一半螢幕向左走，右邊一半螢幕揮拳
+window.addEventListener('touchstart', (e) => {
+    let touchX = e.touches[0].clientX;
+    if (touchX < 200) {
+        player.x -= 20; // 向左移動
+    } else {
+        player.isAttacking = true; // 攻擊
+        setTimeout(() => { player.isAttacking = false; }, 200);
+    }
 });
 
 draw();
