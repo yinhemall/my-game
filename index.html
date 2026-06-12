@@ -3,46 +3,40 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
-        #gameCanvas { display: block; width: 100vw; height: 100vh; }
-
-        /* 當手機是直向時，強制將整個畫面旋轉 90 度 */
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #gameCanvas { display: block; width: 100vw; height: 50vw; }
+        /* 偵測：如果是直向，顯示提示文字 */
+        #orientation-msg { display: none; color: white; font-size: 24px; text-align: center; }
         @media screen and (orientation: portrait) {
-            body {
-                transform: rotate(90deg);
-                transform-origin: left top;
-                width: 100vh;
-                height: 100vw;
-                position: absolute;
-                top: 0;
-                left: 0;
-            }
+            #gameCanvas { display: none; }
+            #orientation-msg { display: block; }
         }
     </style>
 </head>
 <body>
+    <div id="orientation-msg">請將手機轉為橫向以遊玩！</div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 這裡確保絕對路徑，避開 GitHub 路徑解析問題
-        const p1Img = new Image(); p1Img.src = 'https://yinhemall.github.io/my-game/player.PNG';
-        const p2Img = new Image(); p2Img.src = 'https://yinhemall.github.io/my-game/enemy.PNG';
+        // 使用相對路徑，這是最不容易出錯的寫法
+        const p1Img = new Image(); p1Img.src = 'player.PNG';
+        const p2Img = new Image(); p2Img.src = 'enemy.PNG';
 
-        let p1 = { x: 50, y: 100, w: 200, h: 200, hp: 100, isAttacking: false };
-        let p2 = { x: 550, y: 100, w: 200, h: 200, hp: 100, isAttacking: false };
+        let p1 = { x: 50, y: 50, w: 250, h: 250, hp: 100, isAttacking: false };
+        let p2 = { x: 500, y: 50, w: 250, h: 250, hp: 100, isAttacking: false };
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (p1Img.complete) ctx.drawImage(p1Img, p1.x, p1.y, p1.w, p1.h);
-            if (p1.isAttacking) { ctx.fillStyle = "yellow"; ctx.fillRect(p1.x + 180, p1.y + 80, 120, 40); }
+            if (p1.isAttacking) { ctx.fillStyle = "yellow"; ctx.fillRect(p1.x + 200, p1.y + 100, 150, 50); }
             
             ctx.save();
             ctx.scale(-1, 1);
             if (p2Img.complete) ctx.drawImage(p2Img, -p2.x - p2.w, p2.y, p2.w, p2.h);
             ctx.restore();
-            if (p2.isAttacking) { ctx.fillStyle = "red"; ctx.fillRect(p2.x - 120, p2.y + 80, 120, 40); }
+            if (p2.isAttacking) { ctx.fillStyle = "red"; ctx.fillRect(p2.x - 150, p2.y + 100, 150, 50); }
 
             ctx.fillStyle = "white";
             ctx.font = "bold 50px Arial"; 
