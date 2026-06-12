@@ -3,36 +3,41 @@
 <body style="background: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
     <canvas id="gameCanvas" width="400" height="200" style="border: 2px solid white; background: #000;"></canvas>
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const CANVAS = document.getElementById("gameCanvas");
+        const CTX = CANVAS.getContext("2d");
 
-        let p1 = { x: 50, y: 120, w: 50, h: 80, hp: 100, color: "white" };
-        let p2 = { x: 300, y: 120, w: 50, h: 80, hp: 100, color: "red" };
+        // 這裡對應你上傳的大寫 .PNG 檔名
+        const P1_IMG = new Image(); P1_IMG.src = 'PLAYER.PNG';
+        const P2_IMG = new Image(); P2_IMG.src = 'ENEMY.PNG';
+
+        let p1 = { x: 50, y: 100, w: 60, h: 80, hp: 100 };
+        let p2 = { x: 280, y: 100, w: 60, h: 80, hp: 100 };
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
+            
+            // 畫 P1 (正常)
+            if (P1_IMG.complete) CTX.drawImage(P1_IMG, p1.x, p1.y, p1.w, p1.h);
+            
+            // 畫 P2 (水平翻轉，讓它面對 P1)
+            if (P2_IMG.complete) {
+                CTX.save();
+                CTX.scale(-1, 1);
+                CTX.drawImage(P2_IMG, -p2.x - p2.w, p2.y, p2.w, p2.h);
+                CTX.restore();
+            }
 
-            // 畫玩家1 (白色)
-            ctx.fillStyle = p1.color;
-            ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
-
-            // 畫玩家2 (紅色)
-            ctx.fillStyle = p2.color;
-            ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
-
-            // 顯示血條
-            ctx.fillStyle = "white";
-            ctx.fillText("P1 HP: " + p1.hp, 10, 20);
-            ctx.fillText("P2 HP: " + p2.hp, 340, 20);
-
+            // 血條顯示
+            CTX.fillStyle = "white";
+            CTX.fillText("P1 HP: " + p1.hp, 10, 20);
+            CTX.fillText("P2 HP: " + p2.hp, 340, 20);
             requestAnimationFrame(draw);
         }
 
-        // 簡單點擊控制：點擊左半邊 P1 攻擊，點擊右半邊 P2 攻擊
+        // 點擊事件
         window.addEventListener('touchstart', (e) => {
-            let touchX = e.touches[0].clientX;
-            if (touchX < 200) { p2.hp -= 10; } // P1 攻擊 P2
-            else { p1.hp -= 10; } // P2 攻擊 P1
+            if (e.touches[0].clientX < 200) p2.hp -= 5;
+            else p1.hp -= 5;
         });
 
         draw();
