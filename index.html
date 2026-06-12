@@ -2,24 +2,23 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         #game-container { position: relative; width: 800px; height: 400px; border: 4px solid #fff; }
-        canvas { display: block; width: 100%; height: 100%; }
-        /* 確保 UI 在最上層 */
-        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; z-index: 10; pointer-events: none; }
-        .hp-bar { width: 300px; height: 20px; border: 3px solid #fff; background: #222; }
-        #hp1-fill { height: 100%; width: 100%; background: cyan; }
-        #hp2-fill { height: 100%; width: 100%; background: red; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-size: 20px; font-weight: bold; pointer-events: none; }
+        .hp-bar { width: 300px; height: 20px; background: #444; border: 2px solid #fff; }
+        #hp1-fill { height: 100%; width: 100%; background: cyan; transition: width 0.3s; }
+        #hp2-fill { height: 100%; width: 100%; background: red; transition: width 0.3s; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div class="hud">
-        <div class="hp-bar"><div id="hp1-fill" style="width:100%"></div></div>
-        <div class="hp-bar"><div id="hp2-fill" style="width:100%"></div></div>
+        <div>P1 HP<div class="hp-bar"><div id="hp1-fill" style="width:100%"></div></div></div>
+        <div>P2 HP<div class="hp-bar"><div id="hp2-fill" style="width:100%"></div></div></div>
     </div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
 </div>
@@ -36,37 +35,45 @@
     function draw() {
         ctx.clearRect(0, 0, 800, 400);
 
-        // --- P1 繪製 ---
-        // 動作格在 Y=0 到 Y=200；特效在 Y=200 以下
+        // 繪製 P1
         let s1 = p1.attacking ? p1.frame * 200 : 0;
         ctx.drawImage(p1Img, s1, 0, 200, 200, p1.x, p1.y, 200, 200);
-        if(p1.attacking) {
-            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 20, 300, 200);
-        }
+        if(p1.attacking) ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 20, 300, 200);
 
-        // --- P2 繪製 ---
-        ctx.save();
-        ctx.scale(-1, 1); // 翻轉
+        // 繪製 P2
+        ctx.save(); ctx.scale(-1, 1);
         let s2 = p2.attacking ? p2.frame * 200 : 0;
         ctx.drawImage(p2Img, s2, 0, 200, 200, -p2.x - 250, p2.y, 200, 200);
-        if(p2.attacking) {
-            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 550, p2.y - 20, 300, 200);
-        }
+        if(p2.attacking) ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 550, p2.y - 20, 300, 200);
         ctx.restore();
 
         requestAnimationFrame(draw);
     }
 
-    // 觸控攻擊邏輯
+    function triggerAttack(attacker, target, hpId) {
+        if(attacker.attacking) return;
+        attacker.attacking = true;
+        
+        // 扣血邏輯
+        target.hp -= 20;
+        document.getElementById(hpId).style.width = target.hp + "%";
+        
+        // 動畫幀循環 (共4幀)
+        let f = 0;
+        let anim = setInterval(() => {
+            attacker.frame = f++;
+            if(f >= 4) { 
+                clearInterval(anim); 
+                attacker.attacking = false; 
+                attacker.frame = 0; 
+            }
+        }, 100);
+    }
+
     window.addEventListener('touchstart', (e) => {
         let touchX = e.touches[0].clientX / window.innerWidth * 800;
-        if(touchX < 400) {
-            p1.attacking = true;
-            let i = setInterval(() => { p1.frame++; if(p1.frame > 3) { clearInterval(i); p1.attacking = false; p1.frame = 0; } }, 100);
-        } else {
-            p2.attacking = true;
-            let i = setInterval(() => { p2.frame++; if(p2.frame > 3) { clearInterval(i); p2.attacking = false; p2.frame = 0; } }, 100);
-        }
+        if(touchX < 400) triggerAttack(p1, p2, "hp2-fill");
+        else triggerAttack(p2, p1, "hp1-fill");
     });
 
     p1Img.onload = p2Img.onload = draw;
