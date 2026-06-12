@@ -1,15 +1,36 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+
+// 確保畫布有正確尺寸
+canvas.width = 400;
+canvas.height = 200;
+
 let player = { x: 50, y: 150, size: 20, vy: 0, gravity: 0.8 };
 
 function draw() {
+    // 清除上一幀
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 畫出白色方塊 (主角)
     ctx.fillStyle = "white";
     ctx.fillRect(player.x, player.y, player.size, player.size);
+    
+    // 物理邏輯
     player.vy += player.gravity;
     player.y += player.vy;
-    if (player.y > 150) { player.y = 150; player.vy = 0; }
+    
+    // 地面判定
+    if (player.y > 150) { 
+        player.y = 150; 
+        player.vy = 0; 
+    }
+    
     requestAnimationFrame(draw);
 }
-window.addEventListener('touchstart', () => { if (player.y === 150) player.vy = -12; });
+
+// 點擊觸發跳躍
+window.addEventListener('touchstart', () => { 
+    if (player.y === 150) player.vy = -12; 
+});
+
 draw();
