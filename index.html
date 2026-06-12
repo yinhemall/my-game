@@ -1,39 +1,30 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Samurai Duel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #game-container { position: relative; width: 100vw; max-width: 800px; aspect-ratio: 2/1; border: 2px solid #fff; }
-        canvas { width: 100%; height: 100%; display: block; }
-        
-        /* 穩定的 HUD */
-        .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-size: 20px; font-weight: bold; pointer-events: none; }
-        .hp-bar { width: 40%; height: 20px; background: #333; border: 2px solid #fff; }
-        #hp1-fill { height: 100%; width: 100%; background: cyan; transition: width 0.2s; }
-        #hp2-fill { height: 100%; width: 100%; background: red; transition: width 0.2s; }
-        
-        #overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; color:white; font-size:40px; z-index:10; }
+        body { margin: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #game-container { position: relative; width: 100vw; height: 50vw; border: 4px solid #fff; background: #000; }
+        canvas { width: 100%; height: 100%; }
+        /* 確保 UI 高於 Canvas */
+        .hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; color: white; font-size: 20px; z-index: 10; }
     </style>
 </head>
 <body>
-
-<div id="game-container">
-    <div class="hud">
-        <div>P1<div class="hp-bar"><div id="hp1-fill"></div></div></div>
-        <div>P2<div class="hp-bar"><div id="hp2-fill"></div></div></div>
+    <div id="game-container">
+        <div class="hud">
+            <div>P1 HP: <span id="hp1">100</span></div>
+            <div>P2 HP: <span id="hp2">100</span></div>
+        </div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
     </div>
-    <div id="overlay" onclick="location.reload()">REMATCH</div>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-</div>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const p1Img = new Image(); p1Img.src = 'player.PNG'; // 斗笠流浪者
-    const p2Img = new Image(); p2Img.src = 'enemy.PNG';   // 紅面具武士
+    const p1Img = new Image(); p1Img.src = 'player.PNG';
+    const p2Img = new Image(); p2Img.src = 'enemy.PNG';
 
     let p1 = { x: 50, y: 150, hp: 100, frame: 0, attacking: false };
     let p2 = { x: 550, y: 150, hp: 100, frame: 0, attacking: false };
@@ -41,47 +32,29 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // P1 繪製 (流浪者): 使用固定的 200x200 像素格
+        // P1 繪製：固定 200x200
         let s1 = p1.attacking ? p1.frame * 200 : 0;
         ctx.drawImage(p1Img, s1, 0, 200, 200, p1.x, p1.y, 200, 200);
+        
+        // 【關鍵診斷】：如果這行畫不出來，代表 Y=200 之後沒有東西或沒讀取到
         if(p1.attacking) {
-            // 特效：直接抓取下方的特效區，寬度固定 400，高度 200
-            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 20, 300, 200);
+            ctx.fillStyle = "red"; // 先畫一個紅框確認位置
+            ctx.fillRect(p1.x + 50, p1.y, 300, 200); 
+            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y, 300, 200);
         }
 
-        // P2 繪製 (紅面具): 翻轉繪製
+        // P2 翻轉
         ctx.save(); ctx.scale(-1, 1);
         let s2 = p2.attacking ? p2.frame * 200 : 0;
         ctx.drawImage(p2Img, s2, 0, 200, 200, -p2.x - 250, p2.y, 200, 200);
         if(p2.attacking) {
-            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 550, p2.y - 20, 300, 200);
+            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 550, p2.y, 300, 200);
         }
         ctx.restore();
 
         requestAnimationFrame(draw);
     }
-
-    function attack(attacker, target, id) {
-        if(attacker.attacking) return;
-        attacker.attacking = true;
-        target.hp -= 20;
-        document.getElementById(id).style.width = target.hp + "%";
-        if(target.hp <= 0) document.getElementById("overlay").style.display = "flex";
-        
-        let f = 0;
-        let i = setInterval(() => {
-            attacker.frame = f++;
-            if(f > 3) { clearInterval(i); attacker.attacking = false; }
-        }, 120);
-    }
-
-    window.addEventListener('touchstart', (e) => {
-        let touchX = e.touches[0].clientX / window.innerWidth * 800;
-        if(touchX < 400) attack(p1, p2, "hp2-fill");
-        else attack(p2, p1, "hp1-fill");
-    });
-
-    p1Img.onload = p2Img.onload = draw;
+    // ... 後續邏輯
 </script>
 </body>
 </html>
