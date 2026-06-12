@@ -1,13 +1,41 @@
 <!DOCTYPE html>
 <html>
-<body style="background: #333; display: flex; justify-content: center; align-items: center; height: 100vh;">
+<body style="background: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
     <canvas id="gameCanvas" width="400" height="200" style="border: 2px solid white; background: #000;"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        // 直接畫一個紅色方塊確認生效
-        ctx.fillStyle = "red";
-        ctx.fillRect(50, 50, 100, 100);
+
+        let p1 = { x: 50, y: 120, w: 50, h: 80, hp: 100, color: "white" };
+        let p2 = { x: 300, y: 120, w: 50, h: 80, hp: 100, color: "red" };
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 畫玩家1 (白色)
+            ctx.fillStyle = p1.color;
+            ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
+
+            // 畫玩家2 (紅色)
+            ctx.fillStyle = p2.color;
+            ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
+
+            // 顯示血條
+            ctx.fillStyle = "white";
+            ctx.fillText("P1 HP: " + p1.hp, 10, 20);
+            ctx.fillText("P2 HP: " + p2.hp, 340, 20);
+
+            requestAnimationFrame(draw);
+        }
+
+        // 簡單點擊控制：點擊左半邊 P1 攻擊，點擊右半邊 P2 攻擊
+        window.addEventListener('touchstart', (e) => {
+            let touchX = e.touches[0].clientX;
+            if (touchX < 200) { p2.hp -= 10; } // P1 攻擊 P2
+            else { p1.hp -= 10; } // P2 攻擊 P1
+        });
+
+        draw();
     </script>
 </body>
 </html>
