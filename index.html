@@ -8,13 +8,11 @@
         body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         #game-container { position: relative; width: 800px; height: 400px; border: 2px solid #333; }
         #gameCanvas { display: block; width: 100%; height: 100%; background: #000; }
-        
-        /* HUD 樣式 */
         .hud { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-family: sans-serif; }
         .hp-bar { width: 300px; height: 20px; background: #444; border: 2px solid #fff; }
         .hp-fill { height: 100%; width: 100%; transition: width 0.3s; }
         #hp1-fill { background: #00d2ff; }
-        #hp2-fill { background: #ff004c; float: right; }
+        #hp2-fill { background: #ffcc00; float: right; } /* 修正為黃色 */
     </style>
 </head>
 <body>
@@ -31,9 +29,8 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // 這裡請確保你的 GitHub 檔案名稱為 player.PNG 與 enemy.PNG
-    const p1Img = new Image(); p1Img.src = 'player.PNG';
-    const p2Img = new Image(); p2Img.src = 'enemy.PNG';
+    const p1Img = new Image(); p1Img.src = 'player.PNG'; // 藍衣武士
+    const p2Img = new Image(); p2Img.src = 'enemy.PNG'; // 紅衣流浪者
 
     let p1 = { x: 50, y: 150, frame: 0, isAttacking: false, hp: 100 };
     let p2 = { x: 550, y: 150, frame: 0, isAttacking: false, hp: 100 };
@@ -42,24 +39,23 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. 繪製 P1 (紅面具武士)
-        // 角色在上方 (sy=0)，特效在下方 (sy=200)
+        // 1. 繪製 P1 (藍衣武士 - 使用 player.PNG)
         let p1Sx = p1.isAttacking ? p1.frame * 200 : 0;
         ctx.drawImage(p1Img, p1Sx, 0, 200, 200, p1.x, p1.y, 200, 200);
         if (p1.isAttacking) {
             ctx.globalCompositeOperation = 'screen';
-            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 20, 300, 200);
+            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 20, 300, 200); // 藍色劍氣
             ctx.globalCompositeOperation = 'source-over';
         }
 
-        // 2. 繪製 P2 (斗笠流浪者 - 翻轉)
+        // 2. 繪製 P2 (紅衣流浪者 - 使用 enemy.PNG)
         ctx.save();
         ctx.scale(-1, 1);
         let p2Sx = p2.isAttacking ? p2.frame * 200 : 0;
         ctx.drawImage(p2Img, p2Sx, 0, 200, 200, -p2.x - 250, p2.y, 200, 200);
         if (p2.isAttacking) {
             ctx.globalCompositeOperation = 'screen';
-            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 450, p2.y - 20, 300, 200);
+            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 450, p2.y - 20, 300, 200); // 黃色劍氣 (Enemy的圖檔)
             ctx.globalCompositeOperation = 'source-over';
         }
         ctx.restore();
@@ -89,7 +85,6 @@
         else attack(p2, p1, "hp1-fill");
     });
 
-    // 確保圖片載入後開始繪製
     let loaded = 0;
     const check = () => { if (++loaded === 2) draw(); };
     p1Img.onload = check; p2Img.onload = check;
