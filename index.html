@@ -1,85 +1,137 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        #gameCanvas { background: #000; width: 100vw; height: 50vw; }
-        #orientation-msg { display: none; color: white; font-size: 20px; text-align: center; }
-        @media screen and (orientation: portrait) {
-            #gameCanvas { display: none; }
-            #orientation-msg { display: block; }
-        }
+        body { margin: 0; background: #0a0a0a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Poppins', sans-serif; }
+        #game-container { position: relative; border: 2px solid #333; border-radius: 20px; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        #gameCanvas { background: radial-gradient(circle, #1a1a1a 0%, #000 100%); display: block; width: 800px; height: 400px; }
+        
+        /* UI 精美血條 */
+        .hud { position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; }
+        .hp-container { width: 300px; height: 35px; background: rgba(255,255,255,0.1); border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); overflow: hidden; position: relative; backdrop-filter: blur(5px); }
+        .hp-bar { height: 100%; transition: width 0.3s ease; }
+        #hp1 { background: linear-gradient(90deg, #00d2ff, #3a7bd5); width: 100%; }
+        #hp2 { background: linear-gradient(90deg, #f00000, #dc281e); width: 100%; float: right; }
+        .name-label { color: white; font-size: 14px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* 勝負畫面 */
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+        #overlay h1 { color: #fff; font-size: 60px; margin: 0; text-shadow: 0 0 20px #ff004c; }
+        #overlay p { color: #888; font-size: 20px; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="orientation-msg">請將手機轉為橫向以遊玩！</div>
+
+<div id="game-container">
+    <div class="hud">
+        <div>
+            <div class="name-label">Player 1</div>
+            <div class="hp-container"><div id="hp1" class="hp-bar"></div></div>
+        </div>
+        <div style="text-align: right;">
+            <div class="name-label">Enemy</div>
+            <div class="hp-container"><div id="hp2" class="hp-bar"></div></div>
+        </div>
+    </div>
+
     <canvas id="gameCanvas" width="800" height="400"></canvas>
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
 
-        const p1Img = new Image(); p1Img.src = 'player.png';
-        const p2Img = new Image(); p2Img.src = 'enemy.png';
+    <div id="overlay">
+        <h1 id="winner-text">VICTORIOUS</h1>
+        <p onclick="resetGame()">TAP TO REMATCH</p>
+    </div>
+</div>
 
-        let p1 = { x: 50, y: 100, frame: 0, isAttacking: false, hp: 100 };
-        let p2 = { x: 550, y: 100, frame: 0, isAttacking: false, hp: 100 };
-        let gameOver = false;
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const p1Img = new Image(); p1Img.src = 'player.png';
+    const p2Img = new Image(); p2Img.src = 'enemy.png';
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let p1 = { x: 80, y: 150, frame: 0, isAttacking: false, hp: 100 };
+    let p2 = { x: 520, y: 150, frame: 0, isAttacking: false, hp: 100 };
+    let gameOver = false;
 
-            // 繪製 P1
-            let p1Sx = p1.isAttacking ? p1.frame * 200 : 0;
-            ctx.drawImage(p1Img, p1Sx, 0, 200, 200, p1.x, p1.y, 200, 200);
-            if (p1.isAttacking) { // 繪製藍色劍氣 (假設特效在圖片 y=200 的位置)
-                ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 100, p1.y, 400, 200);
-            }
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 繪製 P2
-            ctx.save();
-            ctx.scale(-1, 1);
-            let p2Sx = p2.isAttacking ? p2.frame * 200 : 0;
-            ctx.drawImage(p2Img, p2Sx, 0, 200, 200, -p2.x - 200, p2.y, 200, 200);
-            if (p2.isAttacking) { // 繪製黃色劍氣
-                ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 300, p2.y, 400, 200);
-            }
-            ctx.restore();
+        // 繪製背景裝飾 (簡單的地面線條)
+        ctx.strokeStyle = "#333"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 350); ctx.lineTo(800, 350); ctx.stroke();
 
-            // 血量與勝負
-            ctx.fillStyle = "white"; ctx.font = "30px Arial";
-            ctx.fillText("P1 HP: " + p1.hp, 50, 50);
-            ctx.fillText("P2 HP: " + p2.hp, 600, 50);
-
-            if (gameOver) ctx.fillText("GAME OVER", 300, 200);
-            else requestAnimationFrame(draw);
+        // 處理 P1
+        let p1Sx = p1.isAttacking ? p1.frame * 200 : 0;
+        ctx.drawImage(p1Img, p1Sx, 0, 200, 200, p1.x, p1.y, 200, 200);
+        if (p1.isAttacking) {
+            ctx.globalCompositeOperation = 'screen'; // 過濾黑色背景模式
+            ctx.drawImage(p1Img, 0, 200, 400, 200, p1.x + 50, p1.y - 30, 350, 180);
+            ctx.globalCompositeOperation = 'source-over';
         }
 
-        function triggerAttack(attacker, target) {
-            if (attacker.isAttacking) return;
-            attacker.isAttacking = true;
-            attacker.frame = 0;
-            target.hp = Math.max(0, target.hp - 10);
-            if (target.hp <= 0) gameOver = true;
-            
-            let count = 0;
-            let timer = setInterval(() => {
-                attacker.frame++;
-                if (count++ >= 3) {
-                    clearInterval(timer);
-                    attacker.isAttacking = false;
-                    attacker.frame = 0;
-                }
-            }, 100);
+        // 處理 P2 (翻轉繪製)
+        ctx.save();
+        ctx.scale(-1, 1);
+        let p2Sx = p2.isAttacking ? p2.frame * 200 : 0;
+        ctx.drawImage(p2Img, p2Sx, 0, 200, 200, -p2.x - 200, p2.y, 200, 200);
+        if (p2.isAttacking) {
+            ctx.globalCompositeOperation = 'screen';
+            ctx.drawImage(p2Img, 0, 200, 400, 200, -p2.x - 400, p2.y - 30, 350, 180);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        ctx.restore();
+
+        if (!gameOver) requestAnimationFrame(draw);
+    }
+
+    function triggerAttack(attacker, target, hpBarId) {
+        if (attacker.isAttacking || gameOver) return;
+        attacker.isAttacking = true;
+        attacker.frame = 0;
+        
+        target.hp = Math.max(0, target.hp - 10);
+        document.getElementById(hpBarId).style.width = target.hp + "%";
+
+        if (target.hp <= 0) {
+            gameOver = true;
+            setTimeout(() => {
+                document.getElementById("overlay").style.display = "flex";
+                document.getElementById("winner-text").innerText = (attacker === p1 ? "PLAYER 1" : "ENEMY") + " WINS";
+            }, 500);
         }
 
-        window.addEventListener('touchstart', (e) => {
-            if (gameOver) return;
-            if (e.touches[0].clientX < window.innerWidth / 2) triggerAttack(p1, p2);
-            else triggerAttack(p2, p1);
-        });
+        let count = 0;
+        let timer = setInterval(() => {
+            attacker.frame++;
+            if (count++ >= 3) {
+                clearInterval(timer);
+                attacker.isAttacking = false;
+                attacker.frame = 0;
+            }
+        }, 80);
+    }
 
-        p1Img.onload = draw; p2Img.onload = draw;
-    </script>
+    function resetGame() {
+        p1.hp = 100; p2.hp = 100;
+        p1.frame = 0; p2.frame = 0;
+        document.getElementById("hp1").style.width = "100%";
+        document.getElementById("hp2").style.width = "100%";
+        document.getElementById("overlay").style.display = "none";
+        gameOver = false;
+        draw();
+    }
+
+    window.addEventListener('touchstart', (e) => {
+        if (gameOver) return;
+        let touchX = e.touches[0].clientX;
+        if (touchX < window.innerWidth / 2) triggerAttack(p1, p2, "hp2");
+        else triggerAttack(p2, p1, "hp1");
+    });
+
+    p1Img.onload = draw; p2Img.onload = draw;
+</script>
+
 </body>
 </html>
